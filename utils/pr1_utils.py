@@ -1,7 +1,10 @@
-from .utils import *
-
-
 # borrow from https://github.com/rll/deepul
+import numpy as np
+import torch.functional as F
+from matplotlib import pyplot as plt
+
+from utils.utils import save_training_plot, save_distribution_1d
+
 
 # Question 1
 def pr1_sample_data_1():
@@ -46,17 +49,8 @@ def visualize_pr1_data(dset_type):
     plt.show()
 
 
-def pr1_save_results(dset_type, part, fn):
-    if dset_type == 1:
-        train_data, test_data = pr1_sample_data_1()
-        d = 20
-    elif dset_type == 2:
-        train_data, test_data = pr1_sample_data_2()
-        d = 100
-    else:
-        raise Exception("Invalid dset_type:", dset_type)
-
-    train_losses, test_losses, distribution = fn(train_data, test_data, d, dset_type)
+def save_training(fn, train_data, test_data, d, dataset_type, visual_name, output_name):
+    train_losses, test_losses, distribution = fn(train_data, test_data, d, dataset_type)
     assert np.allclose(np.sum(distribution), 1), f"Distribution sums to {np.sum(distribution)} != 1"
 
     print(f"Final Test Loss: {test_losses[-1]:.4f}")
@@ -64,14 +58,35 @@ def pr1_save_results(dset_type, part, fn):
     save_training_plot(
         train_losses,
         test_losses,
-        f"Q1({part}) Dataset {dset_type} Train Plot",
-        f"results/q1_{part}_dset{dset_type}_train_plot.png",
+        f"{visual_name} Train Plot",
+        f"{output_name}_train_plot.png",
     )
     save_distribution_1d(
         train_data,
         distribution,
-        f"Q1({part}) Dataset {dset_type} Learned Distribution",
-        f"results/q1_{part}_dset{dset_type}_learned_dist.png",
+        f"{visual_name} Learned Distribution",
+        f"{output_name}_learned_dist.png",
+    )
+
+
+def pr1_save_results(dataset_type, part, fn):
+    if dataset_type == 1:
+        train_data, test_data = pr1_sample_data_1()
+        d = 20
+    elif dataset_type == 2:
+        train_data, test_data = pr1_sample_data_2()
+        d = 100
+    else:
+        raise Exception("Invalid dset_type:", dataset_type)
+
+    save_training(
+        fn,
+        train_data,
+        test_data,
+        d,
+        dataset_type,
+        f"Q1({part}) Dataset {dataset_type}",
+        f"results/q1_{part}_dset{dataset_type}",
     )
 
 
