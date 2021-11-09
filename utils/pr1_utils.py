@@ -49,26 +49,6 @@ def visualize_pr1_data(dset_type):
     plt.show()
 
 
-def save_training(fn, train_data, test_data, d, dataset_type, visual_name, output_name):
-    train_losses, test_losses, distribution = fn(train_data, test_data, d, dataset_type)
-    assert np.allclose(np.sum(distribution), 1), f"Distribution sums to {np.sum(distribution)} != 1"
-
-    print(f"Final Test Loss: {test_losses[-1]:.4f}")
-
-    save_training_plot(
-        train_losses,
-        test_losses,
-        f"{visual_name} Train Plot",
-        f"{output_name}_train_plot.png",
-    )
-    save_distribution_1d(
-        train_data,
-        distribution,
-        f"{visual_name} Learned Distribution",
-        f"{output_name}_learned_dist.png",
-    )
-
-
 def pr1_save_results(dataset_type, part, fn):
     if dataset_type == 1:
         train_data, test_data = pr1_sample_data_1()
@@ -79,14 +59,22 @@ def pr1_save_results(dataset_type, part, fn):
     else:
         raise Exception("Invalid dset_type:", dataset_type)
 
-    save_training(
-        fn,
+    train_losses, test_losses, distribution = fn(train_data, test_data, d, dataset_type)
+    assert np.allclose(np.sum(distribution), 1), f"Distribution sums to {np.sum(distribution)} != 1"
+
+    print(f"Final Test Loss: {test_losses[-1]:.4f}")
+
+    save_training_plot(
+        train_losses,
+        test_losses,
+        f"Q1({part}) Dataset {dataset_type} Train Plot",
+        f"results/q1_{part}_dset{dataset_type}_train_plot.png",
+    )
+    save_distribution_1d(
         train_data,
-        test_data,
-        d,
-        dataset_type,
-        f"Q1({part}) Dataset {dataset_type}",
-        f"results/q1_{part}_dset{dataset_type}",
+        distribution,
+        f"Q1({part}) Dataset {dataset_type} Learned Distribution",
+        f"results/q1_{part}_dset{dataset_type}_learned_dist.png",
     )
 
 

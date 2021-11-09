@@ -1,4 +1,6 @@
 # borrow from https://github.com/rll/deepul
+import random
+from typing import Optional
 
 import torch
 import numpy as np
@@ -34,3 +36,13 @@ def fanin_init(tensor: torch.Tensor) -> torch.Tensor:
 def fanin_init_weights_like(tensor: torch.Tensor) -> torch.Tensor:
     new_tensor = torch.empty_like(tensor)
     return fanin_init(new_tensor)
+
+
+def fix_everything(seed: Optional[int] = None):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False

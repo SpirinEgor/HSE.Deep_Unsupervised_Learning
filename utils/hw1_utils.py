@@ -6,8 +6,7 @@ import numpy as np
 from PIL import Image
 from matplotlib import pyplot as plt
 
-from utils.pr1_utils import save_training
-from utils.utils import get_data_dir, load_pickled_data, show_samples, save_training_plot
+from utils.utils import get_data_dir, load_pickled_data, show_samples, save_training_plot, save_distribution_2d
 
 
 def q1_a_sample_data(image_file: str, n: int, d: int) -> Tuple[np.ndarray, np.ndarray]:
@@ -104,15 +103,18 @@ def q1_save_results(dataset_type: int, part: str, fn: Callable):
         split = int(0.8 * len(data))
         train_data, test_data = data[:split], data[split:]
 
-        save_training(
-            fn,
-            train_data,
-            test_data,
-            d,
-            dataset_type,
-            f"Q2({part}) Dataset {dataset_type}",
-            f"results/q2_{part}_dset{dataset_type}",
+        train_losses, test_losses, distribution = fn(train_data, test_data, d, dataset_type)
+        assert np.allclose(np.sum(distribution), 1), f"Distribution sums to {np.sum(distribution)} != 1"
+
+        print(f"Final Test Loss: {test_losses[-1]:.4f}")
+
+        save_training_plot(
+            train_losses,
+            test_losses,
+            f"Q2({part}) Dataset {dataset_type} Train Plot)",
+            f"results/q2_{part}_dset{dataset_type}_train_plot.png",
         )
+        save_distribution_2d(true_dist, distribution, f"results/q2_{part}_dset{dataset_type}_learned_dist.png")
 
     elif part == "b":
         name, img_shape, train_data, test_data = prepare_q1_b_data(dataset_type)
