@@ -22,7 +22,7 @@ def q1_a_sample_data(image_file: str, n: int, d: int) -> Tuple[np.ndarray, np.nd
     return dist, np.array(samples)
 
 
-def prepare_q1_a_data(dataset_type: int) -> Tuple[np.darray, np.ndarray, int, int]:
+def prepare_q1_a_data(dataset_type: int) -> Tuple[np.ndarray, np.ndarray, int, int]:
     data_dir = get_data_dir(1)
     if dataset_type == 1:
         n, d = 10000, 25
