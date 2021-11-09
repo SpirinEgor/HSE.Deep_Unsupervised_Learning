@@ -10,7 +10,7 @@ from utils.pr1_utils import save_training
 from utils.utils import get_data_dir, load_pickled_data, show_samples, save_training_plot
 
 
-def q1_a_sample_data(image_file: str, n: int, d: int) -> Tuple[np.darray, np.ndarray]:
+def q1_a_sample_data(image_file: str, n: int, d: int) -> Tuple[np.ndarray, np.ndarray]:
     im = Image.open(image_file).resize((d, d)).convert("L")
     im = np.array(im).astype("float32")
     dist = im / im.sum()
