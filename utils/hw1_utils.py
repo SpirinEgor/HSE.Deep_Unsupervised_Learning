@@ -41,7 +41,7 @@ def get_data_q1_a(dataset_type: int) -> np.ndarray:
 
 
 def visualize_q1a_data(dataset_type: int):
-    _, data, _, d = get_data_q1_a(dataset_type)
+    _, data, _, d = prepare_q1_a_data(dataset_type)
     split = int(0.8 * len(data))
     train_data, test_data = data[:split], data[split:]
 
