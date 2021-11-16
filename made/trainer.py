@@ -5,7 +5,7 @@ import torch
 from torch.nn import CrossEntropyLoss
 from torch.optim import AdamW
 from torch.utils.data import DataLoader
-from tqdm.auto import trange, tqdm
+from tqdm.auto import trange
 
 from made.made_model import MADE
 from utils.pytorch_utils import fix_everything
@@ -41,10 +41,11 @@ class ImageMADETrainer:
         fix_everything(seed)
         optimizer = AdamW(self.__made.parameters(), lr=lr, weight_decay=weight_decay)
         train_losses, test_losses = [], []
-        for epoch in trange(n_epochs, desc="Epoch"):
+        epoch_range = trange(n_epochs, desc="Epochs")
+        for _ in epoch_range:
             self.__made.train()
-            train_iterator = tqdm(train_dataloader, desc="Train")
-            for batch in train_iterator:
+            epoch_train_losses = []
+            for batch in train_dataloader:
                 batch = batch.to(device=self.__device)
                 self.__made.zero_grad()
 
@@ -56,23 +57,25 @@ class ImageMADETrainer:
                     torch.nn.utils.clip_grad_norm_(self.__made.parameters(), clip_norm)
                 optimizer.step()
 
-                train_losses.append(loss.item())
-                train_iterator.set_postfix({"loss": train_losses[-1]})
-            train_iterator.close()
+                epoch_train_losses.append(loss.item())
 
             if test_dataloader is None:
                 continue
 
             self.__made.eval()
             epoch_test_losses = []
-            for batch in tqdm(test_dataloader, desc="Test"):
+            for batch in test_dataloader:
                 batch = batch.to(device=self.__device)
                 logits = self.made(batch)
                 loss = self.__loss(logits, batch)
                 epoch_test_losses.append(loss.item())
-            mean_loss: float = np.mean(epoch_test_losses)
-            tqdm.write(f"Epoch #{epoch}\n\tmean test loss: {mean_loss}")
-            test_losses.append(mean_loss)
+
+            mean_train_loss = np.mean(epoch_train_losses)
+            train_losses += epoch_train_losses
+            mean_test_loss = np.mean(epoch_test_losses)
+            test_losses.append(mean_test_loss)
+
+            epoch_range.set_postfix({"train loss": mean_train_loss, "test loss": mean_test_loss})
 
         if test_dataloader is None:
             return train_losses
