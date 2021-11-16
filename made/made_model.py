@@ -1,8 +1,7 @@
 from typing import List, Tuple
 
 import torch
-from numpy import arange, repeat, mgrid, ascontiguousarray, ndarray, prod
-from numpy.random import randint
+import numpy as np
 from torch import log_softmax, softmax
 from torch.nn import ReLU, Sequential, Module
 
@@ -19,7 +18,6 @@ class MADE(Module):
         n_features: int,
         d_size: int,
         hidden_sizes: List[int] = None,
-        order: List[int] = None,
         use_one_hot: bool = False,
     ):
         super().__init__()
@@ -27,7 +25,8 @@ class MADE(Module):
             hidden_sizes = []
         self.__use_one_hot = use_one_hot
         self.__n_features = n_features
-        self.__layer_sizes = [n_features * d_size if use_one_hot else n_features] + hidden_sizes + [n_features * d_size]
+        self.__input_dim = n_features * d_size if use_one_hot else n_features
+        self.__layer_sizes = [self.__input_dim] + hidden_sizes + [n_features * d_size]
         self.__d_size = d_size
 
         self.__layers = []
@@ -36,29 +35,31 @@ class MADE(Module):
         self.__layers.pop()
         self.__made = Sequential(*self.__layers)
 
-        if order is None:
-            self.__order = arange(self.__n_features)
-        else:
-            self.__order = order
-
         self.__init_masks()
 
     def __init_masks(self):
-        n_layers = len(self.__layer_sizes) - 1
-        prev_order = self.__order
-        for _l in range(n_layers - 1):
-            cur_order = randint(prev_order.min(), self.__layer_sizes[0] - 1, size=self.__layer_sizes[_l + 1])
+        n_layers = len(self.__layer_sizes) - 2
+        prev_order = np.arange(self.__n_features)
+        masks = []
+        for _l in range(n_layers):
+            cur_order = np.random.randint(prev_order.min(), self.__input_dim - 1, size=self.__layer_sizes[_l + 1])
             mask = prev_order[:, None] <= cur_order[None, :]
 
             if _l == 0 and self.__use_one_hot:
-                mask = repeat(mask, self.__d_size, axis=0)
+                mask = np.repeat(mask, self.__d_size, axis=0)
 
-            self.__layers[_l * 2].set_mask(mask)
+            masks.append(mask)
             prev_order = cur_order
 
-        last_layer_mask = prev_order[:, None] < self.__order[None, :]
-        last_layer_mask = repeat(last_layer_mask, self.__d_size, axis=1)
-        self.__layers[-1].set_mask(last_layer_mask)
+        last_layer_mask = prev_order[:, None] < np.arange(self.__n_features)[None, :]
+        last_layer_mask = np.repeat(last_layer_mask, self.__d_size, axis=1)
+        masks.append(last_layer_mask)
+
+        layers = [_l for _l in self.__layers if isinstance(_l, MaskedLinear)]
+        assert len(layers) == len(masks)
+
+        for _m, _l in zip(masks, layers):
+            _l.set_mask(_m)
 
     def forward(self, input_batch: torch.Tensor) -> torch.Tensor:
         """MADE forward pass.
@@ -83,18 +84,18 @@ class MADE(Module):
     def get_distribution(self) -> torch.Tensor:
         if self.__n_features != 2:
             raise RuntimeError("Distribution building only supported for 2D joint")
-        x = mgrid[0 : self.__d_size, 0 : self.__d_size].reshape(2, self.__d_size ** 2).T
-        x = torch.tensor(ascontiguousarray(x), dtype=torch.long, device=self.device, requires_grad=False)
+        x = np.mgrid[0 : self.__d_size, 0 : self.__d_size].reshape(2, self.__d_size ** 2).T
+        x = torch.tensor(np.ascontiguousarray(x), dtype=torch.long, device=self.device, requires_grad=False)
         log_probabilities = log_softmax(self(x), dim=1)
         distribution = torch.gather(log_probabilities, 1, x.unsqueeze(1)).squeeze(1)
         distribution = distribution.sum(dim=1)
         return distribution.exp().view(self.__d_size, self.__d_size).detach().cpu().numpy()
 
-    def sample(self, n: int, result_shape: Tuple) -> ndarray:
-        if prod(result_shape) != self.__n_features:
+    def sample(self, n: int, result_shape: Tuple) -> np.ndarray:
+        if np.prod(result_shape) != self.__n_features:
             raise ValueError(f"Result shape ({result_shape}) mismatch size of input features ({self.__n_features})")
         samples = torch.zeros(n, self.__n_features, device=self.device)
-        inv_ordering = {x: i for i, x in enumerate(self.__order)}
+        inv_ordering = {x: i for i, x in enumerate(np.arange(self.__input_dim))}
         with torch.no_grad():
             for i in range(self.__n_features):
                 logits = self(samples).view(n, self.__d_size, self.__n_features)[:, :, inv_ordering[i]]
