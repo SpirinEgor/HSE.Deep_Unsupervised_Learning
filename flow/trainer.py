@@ -29,7 +29,8 @@ class Trainer:
         self._device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         print(f"Use {self._device} device")
 
-        self._pixel_flow = FlowPixelCNN(mixture_components, pixel_cnn_params).to(self._device)
+        dist_params = [torch.zeros((1,), device=self._device), torch.ones((1,), device=self._device)]
+        self._pixel_flow = FlowPixelCNN(mixture_components, pixel_cnn_params, dist_params).to(self._device)
 
     def _step(self, batch: torch.Tensor, is_train: bool = False) -> torch.Tensor:
         batch = batch.to(self._device)

@@ -1,4 +1,4 @@
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional, List
 
 import torch
 from scipy.optimize import bisect
@@ -9,13 +9,13 @@ from pixel_cnn import PixelCNN
 
 
 class FlowPixelCNN(nn.Module):
-    def __init__(self, mixture_components: int, pixel_cnn_kwargs: Dict[str, Any]):
+    def __init__(self, mixture_components: int, pixel_cnn_kwargs: Dict[str, Any], dist_params: List[torch.Tensor]):
         super().__init__()
         self._n_comp = mixture_components
         output = 3 * mixture_components
         self.__pixel_cnn = PixelCNN(out_channels=output, **pixel_cnn_kwargs)
 
-        self._base_dist = Uniform(0, 1)
+        self._base_dist = Uniform(*dist_params)
 
         self.__ln_2 = nn.Parameter(torch.tensor(2).log())
 
