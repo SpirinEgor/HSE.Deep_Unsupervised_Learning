@@ -35,14 +35,14 @@ def visualize_pr1_data(dset_type):
         train_data, test_data = pr1_sample_data_2()
         d = 100
     else:
-        raise Exception('Invalid dset_type:', dset_type)
+        raise Exception("Invalid dset_type:", dset_type)
     fig, (ax1, ax2) = plt.subplots(1, 2)
-    ax1.set_title('Train Data')
+    ax1.set_title("Train Data")
     ax1.hist(train_data, bins=np.arange(d) - 0.5, density=True)
-    ax1.set_xlabel('x')
-    ax2.set_title('Test Data')
+    ax1.set_xlabel("x")
+    ax2.set_title("Test Data")
     ax2.hist(test_data, bins=np.arange(d) - 0.5, density=True)
-    print(f'Dataset {dset_type}')
+    print(f"Dataset {dset_type}")
     plt.show()
 
 
@@ -54,18 +54,25 @@ def pr1_save_results(dset_type, part, fn):
         train_data, test_data = pr1_sample_data_2()
         d = 100
     else:
-        raise Exception('Invalid dset_type:', dset_type)
+        raise Exception("Invalid dset_type:", dset_type)
 
     train_losses, test_losses, distribution = fn(train_data, test_data, d, dset_type)
-    assert np.allclose(np.sum(distribution), 1), f'Distribution sums to {np.sum(distribution)} != 1'
+    assert np.allclose(np.sum(distribution), 1), f"Distribution sums to {np.sum(distribution)} != 1"
 
-    print(f'Final Test Loss: {test_losses[-1]:.4f}')
+    print(f"Final Test Loss: {test_losses[-1]:.4f}")
 
-    save_training_plot(train_losses, test_losses, f'Q1({part}) Dataset {dset_type} Train Plot',
-                       f'results/q1_{part}_dset{dset_type}_train_plot.png')
-    save_distribution_1d(train_data, distribution,
-                         f'Q1({part}) Dataset {dset_type} Learned Distribution',
-                         f'results/q1_{part}_dset{dset_type}_learned_dist.png')
+    save_training_plot(
+        train_losses,
+        test_losses,
+        f"Q1({part}) Dataset {dset_type} Train Plot",
+        f"results/q1_{part}_dset{dset_type}_train_plot.png",
+    )
+    save_distribution_1d(
+        train_data,
+        distribution,
+        f"Q1({part}) Dataset {dset_type} Learned Distribution",
+        f"results/q1_{part}_dset{dset_type}_learned_dist.png",
+    )
 
 
 def plot_distribution(model_cls, k=4):
@@ -78,15 +85,15 @@ def plot_distribution(model_cls, k=4):
     plt.figure()
 
     priors = F.softmax(model.pi_logits, dim=0)
-    plt.hist(train_data, bins=np.arange(d) - 0.5, label='data', density=True)
+    plt.hist(train_data, bins=np.arange(d) - 0.5, label="data", density=True)
     x = np.linspace(-0.5, d - 0.5, 1000)
 
     for i in range(k):
         y = model.single_prob(i).repeat(1000 // d)
-        plt.plot(x, y, label=f'prior={priors[i]:.4f}')
+        plt.plot(x, y, label=f"prior={priors[i]:.4f}")
 
-    plt.title('Distribution per mode')
-    plt.xlabel('x')
-    plt.ylabel('Probability')
+    plt.title("Distribution per mode")
+    plt.xlabel("x")
+    plt.ylabel("Probability")
     plt.legend()
     # plt.show()
