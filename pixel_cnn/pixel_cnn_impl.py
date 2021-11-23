@@ -2,7 +2,7 @@ from typing import Tuple
 
 from torch import nn, Tensor
 
-from flow_pixel_cnn.masked_conv import ConvTypeB, ConvTypeA
+from pixel_cnn.masked_conv import ConvTypeB, ConvTypeA
 
 
 class ResidualBlock(nn.Module):
