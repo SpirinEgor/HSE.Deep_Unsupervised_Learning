@@ -8,11 +8,14 @@ class MaskedConv(Conv2d):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.mask = Parameter(self.get_mask())
-        self.weight.data *= self.mask
 
     @abstractmethod
     def get_mask(self) -> Tensor:
         raise NotImplementedError()
+
+    def forward(self, *args, **kwargs):
+        self.weight.data *= self.mask
+        return super().forward(*args, **kwargs)
 
 
 class ConvTypeA(MaskedConv):
