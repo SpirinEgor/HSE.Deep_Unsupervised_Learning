@@ -4,6 +4,7 @@ import torch
 from scipy.optimize import bisect
 from torch import nn
 from torch.distributions import Uniform, Normal, Distribution
+from tqdm.auto import trange
 
 from pixel_cnn import PixelCNN
 
@@ -17,7 +18,7 @@ class FlowPixelCNN(nn.Module):
 
         self._base_dist = Uniform(*dist_params)
 
-        self.__ln_2 = nn.Parameter(torch.tensor(2).log())
+        self.__ln_2 = nn.Parameter(torch.tensor(2).log(), requires_grad=False)
 
     def forward(self, batch: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         # [N; 3 * comp; C; H; W]
@@ -58,13 +59,16 @@ class FlowPixelCNN(nn.Module):
         c, h, w = self.__pixel_cnn.input_shape
         with torch.no_grad():
             samples = torch.zeros((n_samples, c, h, w), device=device)
+            sampling_progress_bar = trange(h * w * c, desc="Sampling")
             for y in range(h):
                 for x in range(w):
-                    for c in range(c):
-                        pixel_out = self.__pixel_cnn(samples)[:, :, c, y, x]
+                    for z in range(c):
+                        pixel_out = self.__pixel_cnn(samples)[:, :, z, y, x]
                         _w, mu, log_s = pixel_out.chunk(3, dim=1)
                         _w = torch.softmax(_w, dim=1)
-                        samples[:, c, y, x] = self.inverse_flow(_w, mu, log_s)
+                        samples[:, z, y, x] = self.inverse_flow(_w, mu, log_s)
+                        sampling_progress_bar.update()
+            sampling_progress_bar.close()
 
         return torch.clip(samples, 0, 1).permute(0, 2, 3, 1)
 

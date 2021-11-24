@@ -83,6 +83,7 @@ class Trainer:
                 epoch_range.set_postfix({"train loss": epoch_loss, "test loss": test_loss})
             else:
                 epoch_range.set_postfix({"train loss": epoch_loss})
+        epoch_range.close()
 
         return (train_losses, test_losses) if test_dataloader is not None else train_losses
 
