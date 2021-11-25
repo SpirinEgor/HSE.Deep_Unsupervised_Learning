@@ -3,3 +3,4 @@ torch~=1.10.0
 scipy~=1.7.2
 numpy~=1.21.4
 tqdm~=4.62.3
+torchdiffeq~=0.2.2
