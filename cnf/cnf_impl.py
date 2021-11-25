@@ -20,19 +20,20 @@ class ContiguousNormalizedFlow(nn.Module):
         layers = [nn.Linear(1, hidden_dims[0]), nn.Tanh()]
         for i in range(1, len(hidden_dims)):
             layers.extend([nn.Linear(hidden_dims[i - 1], hidden_dims[i]), nn.Tanh()])
-        layers.append(nn.Linear(hidden_dims[-1], 2 * self._block_dim + width))
 
         self._model = nn.Sequential(*layers)
+        self._u_model = nn.Linear(hidden_dims[-1], self._block_dim)
+        self._w_model = nn.Linear(hidden_dims[-1], self._block_dim)
+        self._b_model = nn.Linear(hidden_dims[-1], self._width)
+
         self._base_dist = MultivariateNormal(*base_dist_args)
 
     def _get_u_w_b(self, t: Tensor) -> TRIPLE_TENSOR:
-        model_out = self._model(t)
-        u, w, b = model_out.split([self._block_dim, self._block_dim, self._width], dim=1)
-        return (
-            u.reshape(self._width, 1, self._input_dim),
-            w.reshape(self._width, self._input_dim, 1),
-            b.reshape(self._width, 1, 1),
-        )
+        model_out = self._model(t.unsqueeze(0)).squeeze(0)
+        u = self._u_model(model_out).reshape(self._width, 1, self._input_dim)
+        w = self._w_model(model_out).reshape(self._width, self._input_dim, 1)
+        b = self._b_model(model_out).reshape(self._width, 1, 1)
+        return u, w, b
 
     def _get_dz_dt(self, z: Tensor, t: Tensor) -> Tensor:
         u, w, b = self._get_u_w_b(t)
@@ -48,12 +49,15 @@ class ContiguousNormalizedFlow(nn.Module):
             m_trace -= torch.autograd.grad(f[:, i].sum(), z, create_graph=True)[0][:, i]
         return m_trace.reshape(batch_size, 1)
 
-    def forward(self, t: Tensor, z: Tensor) -> DOUBLE_TENSOR:
+    @torch.enable_grad()
+    def forward(self, t: Tensor, ode_input: DOUBLE_TENSOR) -> DOUBLE_TENSOR:
+        z = ode_input[0]
+        z.requires_grad_(True)
         dz_dt = self._get_dz_dt(z, t)
         dlog_p_dt = self._get_dlog_p_dt(dz_dt, z)
         return dz_dt, dlog_p_dt
 
-    def _flow(self, z_1: Tensor, t_0: float = 0.0, t_1: float = 10.0, tolerance: float = 1e-5) -> DOUBLE_TENSOR:
+    def _flow(self, z_1: Tensor, t_0: float, t_1: float, tolerance: float = 1e-5) -> DOUBLE_TENSOR:
         bs = z_1.shape[0]
         dlog_p_dt_1 = z_1.new_zeros((bs, 1), dtype=torch.float32)
         time_interval = z_1.new_tensor([t_1, t_0], dtype=torch.float32)
@@ -64,11 +68,16 @@ class ContiguousNormalizedFlow(nn.Module):
 
         return z_t[-1], -m_log_det_t[-1]
 
-    def _log_prob(self, batch: Tensor, t_0: float = 0.0, t_1: float = 10.0, tolerance: float = 1e-5) -> torch.Tensor:
-
-        batch_size = batch.shape[0]
-
+    def log_prob(self, batch: Tensor, t_0: float, t_1: float, tolerance: float = 1e-5) -> Tensor:
+        bs = batch.shape[0]
         z, log_det = self._flow(batch, t_0, t_1, tolerance)
-        lop_p_z = self.base_dist.log_prob(z).reshape(batch_size, 1)
-
+        lop_p_z = self._base_dist.log_prob(z).reshape(bs, 1)
         return lop_p_z + log_det
+
+    @torch.no_grad()
+    def calc_probability(self, batch: Tensor, t_0: float, t_1: float, tolerance: float = 1e-5) -> Tensor:
+        return self.log_prob(batch, t_0, t_1, tolerance).exp()
+
+    @torch.no_grad()
+    def extract_latent_vector(self, batch: Tensor, t_0: float, t_1: float, tolerance: float) -> Tensor:
+        return self._flow(batch, t_0, t_1, tolerance)[0]
