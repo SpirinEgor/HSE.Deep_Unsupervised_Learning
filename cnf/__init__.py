@@ -1,4 +1,4 @@
-from .cnf_impl import ContiguousNormalizedFlow
+from .cnf_impl import ContiguousNormalizedFlow, HutchinsonCNF
 from .trainer import CNFTrainer
 
-__all__ = ["ContiguousNormalizedFlow", "CNFTrainer"]
+__all__ = ["ContiguousNormalizedFlow", "CNFTrainer", "HutchinsonCNF"]
