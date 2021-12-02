@@ -37,7 +37,7 @@ class ContiguousNormalizedFlow(nn.Module):
 
     def _get_dz_dt(self, z: Tensor, t: Tensor) -> Tensor:
         u, w, b = self._get_u_w_b(t)
-        z_r = z.unsqueeze(0).expand(self._width, -1, -1)
+        z_r = z.unsqueeze(0).repeat(self._width, -1, -1)
         lin = z_r.matmul(w) + b
         h = torch.tanh(lin).matmul(u)
         return h.mean(dim=0)
