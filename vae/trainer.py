@@ -31,8 +31,10 @@ def train_vae(
 
     train_losses, test_losses = [], []
 
+    test_losses.append(test_vae(vae, test_dataloader, device, beta))
+
     epoch_bar = trange(n_epochs, desc="Training")
-    postfix = {}
+    postfix = {"test_elbo": test_losses[-1][0]}
     for _ in epoch_bar:
         vae.train()
         for batch in train_dataloader:
@@ -53,7 +55,7 @@ def train_vae(
 
         if train_dataloader is None:
             continue
-        test_losses.append(test_vae(vae, test_dataloader, beta))
+        test_losses.append(test_vae(vae, test_dataloader, device, beta))
         postfix["test_elbo"] = test_losses[-1][0]
         epoch_bar.set_postfix(postfix)
 
@@ -62,11 +64,12 @@ def train_vae(
     return (array(train_losses), array(test_losses)) if test_dataloader is not None else array(train_losses)
 
 
-def test_vae(vae: Vae32x32, test_dataloader: DataLoader, beta: float = 1.0) -> Tuple[float, ...]:
+def test_vae(vae: Vae32x32, test_dataloader: DataLoader, device: torch.device, beta: float = 1.0) -> Tuple[float, ...]:
     vae.eval()
     t_loss, r_loss, kl_loss = 0, 0, 0
     for batch in test_dataloader:
         with torch.no_grad():
+            batch = batch.to(device)
             reconstruction, (_, mu, log_sigma) = vae(batch)
             r_loss_val = calc_reconstruction_loss(batch.detach(), reconstruction)
             kl_loss_val = calc_kl_loss(mu, log_sigma)
