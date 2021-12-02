@@ -81,3 +81,12 @@ class ContiguousNormalizedFlow(nn.Module):
     @torch.no_grad()
     def extract_latent_vector(self, batch: Tensor, t_0: float, t_1: float, tolerance: float) -> Tensor:
         return self._flow(batch, t_0, t_1, tolerance)[0]
+
+
+class HutchinsonCNF(ContiguousNormalizedFlow):
+    def _get_dlog_p_dt(self, f: Tensor, z: Tensor) -> Tensor:
+        v = z.new_empty((self._input_dim, 1))
+        torch.randint(0, 2, v.shape, out=v)
+
+        a = torch.autograd.grad(f.matmul(v).sum(), z, create_graph=True)[0]
+        return -a.matmul(v)
