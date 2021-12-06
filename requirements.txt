@@ -1,5 +1,7 @@
 matplotlib~=3.5.0
-torch~=1.10.0
+torch>=1.10.0
 scipy~=1.7.2
 numpy~=1.21.4
+torchvision>=0.10.0
+pillow~=8.4.0
 tqdm~=4.62.3
