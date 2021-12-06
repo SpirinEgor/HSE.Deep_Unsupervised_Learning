@@ -1,4 +1,6 @@
-from .utils import *
+from os.path import join
+
+from utils.utils import get_data_dir, load_pickled_data, save_training_plot, show_samples
 
 
 # Question 3
