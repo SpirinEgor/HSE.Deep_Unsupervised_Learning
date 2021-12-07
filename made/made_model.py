@@ -68,7 +68,7 @@ class MADE(Module):
         """
         batch_size = input_batch.shape[0]
         out = self.__made(input_batch)
-        out = out.reshape(batch_size, self.__layer_sizes[-1], self.__d_size)
+        out = out.reshape(batch_size, self.__n_features, self.__d_size)
         return out.transpose(2, 1)
         #
         # if self.__use_one_hot:
