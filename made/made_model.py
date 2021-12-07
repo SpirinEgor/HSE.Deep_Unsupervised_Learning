@@ -67,22 +67,18 @@ class MADE(Module):
         :return [batch size; d size; *n features] tensor with features distributions
         """
         batch_size = input_batch.shape[0]
-        out = self.__made(input_batch)
-        out = out.reshape(batch_size, self.__n_features, self.__d_size)
-        return out.transpose(2, 1)
-        #
-        # if self.__use_one_hot:
-        #     input_batch_flat = input_batch.view(-1)
-        #     ohe_features = input_batch.new_zeros((input_batch_flat.shape[0], self.__d_size))
-        #     ohe_features[torch.arange(input_batch_flat.shape[0]), input_batch_flat] = 1
-        #     # [batch size; d * input shape size] = [batch size; k]
-        #     made_input = ohe_features.view(batch_size, -1).float()
-        # else:
-        #     # [batch size; input shape size] = [batch size; k]
-        #     made_input = input_batch.view(batch_size, -1).float()
-        #
-        # logits = self.__made(made_input).view(batch_size, -1, self.__d_size)
-        # return logits.permute(0, 2, 1).view(batch_size, self.__d_size, *input_batch.shape[1:])
+        if self.__use_one_hot:
+            input_batch_flat = input_batch.view(-1)
+            ohe_features = input_batch.new_zeros((input_batch_flat.shape[0], self.__d_size))
+            ohe_features[torch.arange(input_batch_flat.shape[0]), input_batch_flat] = 1
+            # [batch size; d * input shape size] = [batch size; k]
+            made_input = ohe_features.view(batch_size, -1).float()
+        else:
+            # [batch size; input shape size] = [batch size; k]
+            made_input = input_batch.view(batch_size, -1).float()
+
+        logits = self.__made(made_input).view(batch_size, -1, self.__d_size)
+        return logits.permute(0, 2, 1).view(batch_size, self.__d_size, *input_batch.shape[1:])
 
     def get_distribution(self) -> torch.Tensor:
         if self.__n_features != 2:
