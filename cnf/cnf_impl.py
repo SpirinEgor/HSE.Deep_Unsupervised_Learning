@@ -87,6 +87,7 @@ class HutchinsonCNF(ContiguousNormalizedFlow):
     def _get_dlog_p_dt(self, f: Tensor, z: Tensor) -> Tensor:
         v = z.new_empty((self._input_dim, 1))
         torch.randint(0, 2, v.shape, out=v)
+        v = 2 * v - 1
 
         a = torch.autograd.grad(f.matmul(v).sum(), z, create_graph=True)[0]
         return -a.matmul(v)

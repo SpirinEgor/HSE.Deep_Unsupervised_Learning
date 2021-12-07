@@ -1,11 +1,12 @@
 import os
+import pickle
 from os.path import join, dirname, exists
+
 import matplotlib.pyplot as plt
 import numpy as np
-import pickle
 import torch
-import torch.nn.functional as F
 from torchvision.utils import make_grid
+
 
 # borrow from https://github.com/rll/deepul
 
