@@ -124,7 +124,7 @@ class VAETrainer:
             for i in range(self._latent_dim):
                 mu, log_sigma = self._flow_made(z)
                 mu, log_sigma = mu[:, i], log_sigma[:, i]
-                z[:, i] = self._flow_made.inverse_flow(z[:, i], mu, log_sigma)
+                z[:, i] = self._flow_made.inverse_flow(z[:, i], mu[:, i], log_sigma[:, i])
 
         z = z.unsqueeze(-1).unsqueeze(-1)
         samples = torch.clip(self._vae.decode(z), -1, 1)  # 0, 1
