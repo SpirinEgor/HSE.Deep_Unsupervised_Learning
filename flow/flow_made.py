@@ -20,9 +20,9 @@ class FlowMade(nn.Module):
         :param z: tensor of shape [bs; n features]
         """
         # [bs; n features; 2]
-        made_out = self._made(z).reshape(-1, self._n_features, 2)
+        made_out = self._made(z)
         # [bs; n_features, 1]
-        mu, log_sigma = torch.chunk(made_out, 2, dim=-1)
+        mu, log_sigma = torch.chunk(made_out, 2, dim=1)
         return mu.squeeze(-1), log_sigma.squeeze(-1)
 
     def flow(self, z: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
