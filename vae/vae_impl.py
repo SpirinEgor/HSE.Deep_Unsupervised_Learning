@@ -65,9 +65,3 @@ class Vae32x32(nn.Module):
 
     def decode(self, z: torch.Tensor) -> torch.Tensor:
         return self._decoder(z)
-
-    @torch.no_grad()
-    def sample(self, n: int, device: torch.device) -> torch.Tensor:
-        z = torch.randn(n, self._latent_dim, 1, 1, device=device)
-        samples = torch.clip(self.decode(z), -1, 1)  # 0, 1
-        return samples.permute(0, 2, 3, 1)
