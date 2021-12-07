@@ -67,6 +67,7 @@ class MADE(Module):
         :return [batch size; d size; *n features] tensor with features distributions
         """
         batch_size = input_batch.shape[0]
+
         if self.__use_one_hot:
             input_batch_flat = input_batch.view(-1)
             ohe_features = input_batch.new_zeros((input_batch_flat.shape[0], self.__d_size))
