@@ -1,6 +1,7 @@
 from typing import Tuple
 
-from torch import nn, Tensor
+import torch
+from torch import nn, Tensor, softmax
 
 from pixel_cnn.masked_conv import ConvTypeB, ConvTypeA
 
@@ -61,3 +62,30 @@ class PixelCNN(nn.Module):
     @property
     def input_shape(self) -> Tuple[int, int, int]:
         return self._c, self._h, self._w
+
+
+class PixelCNNVae(PixelCNN):
+    def __init__(
+        self, in_size: int, in_channels: int, hidden_channels: int = 120, num_bins: int = 4, num_blocks: int = 8
+    ):
+        super().__init__(in_channels, num_bins // in_channels, in_size, in_size, num_blocks, hidden_channels)
+        self._emb = nn.Embedding(num_bins, in_channels)
+        self._num_bins = num_bins
+        self._in_size = in_size
+
+    def forward(self, batch: Tensor) -> Tensor:
+        # [B, C, H, W]
+        emb = self._emb(batch).squeeze(1).permute(0, 3, 1, 2)
+        b, _, h, w = emb.shape
+        return super().forward(emb).reshape(b, self._num_bins, h, w)
+
+    @torch.no_grad()
+    def sample(self, num_samples: int, device: torch.device) -> Tensor:
+        result = torch.zeros((num_samples, self._in_size, self._in_size), dtype=torch.long).to(device)
+        for i in range(self._in_size):
+            for j in range(self._in_size):
+                out = self(result)
+                probs = softmax(out, dim=1)[..., i, j]
+
+                result[:, i, j] = torch.multinomial(probs, num_samples=1).flatten()
+        return result
