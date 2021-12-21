@@ -57,8 +57,6 @@ class Vae32x32(nn.Module):
 
     def encode(self, images: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         mu, log_sigma = torch.chunk(self._encoder(images), 2, dim=1)
-        # mu = mu.reshape(-1, self._latent_dim)
-        # log_sigma = mu.reshape(-1, self._latent_dim)
         return mu, log_sigma
 
     @staticmethod
@@ -66,11 +64,4 @@ class Vae32x32(nn.Module):
         return mu + torch.randn_like(log_sigma) * torch.exp(log_sigma)
 
     def decode(self, z: torch.Tensor) -> torch.Tensor:
-        # z = z.reshape(-1, 1, 1, self._latent_dim)
         return self._decoder(z)
-
-    @torch.no_grad()
-    def sample(self, n: int, device: torch.device) -> torch.Tensor:
-        z = torch.randn(n, self._latent_dim, 1, 1, device=device)
-        samples = torch.clip(self.decode(z), -1, 1)  # 0, 1
-        return samples.permute(0, 2, 3, 1)
