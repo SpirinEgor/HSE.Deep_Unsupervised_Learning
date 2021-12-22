@@ -17,8 +17,8 @@ class WGanGradientPolicy:
 
     def __init__(self, n_filters: int, device: torch.device):
         noise = torch.distributions.Normal(torch.tensor(0.0, device=device), torch.tensor(1.0, device=device))
-        self._generator = SNGanGenerator128to32x32(noise, n_filters)
-        self._discriminator = SNGanDiscriminator32x32to128(n_filters)
+        self._generator = SNGanGenerator128to32x32(noise, n_filters).to(device)
+        self._discriminator = SNGanDiscriminator32x32to128(n_filters).to(device)
         self._device = device
 
     def gradient_penalty(self, real_data: Tensor, fake_data: Tensor) -> Tensor:
