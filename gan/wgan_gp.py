@@ -1,4 +1,3 @@
-from itertools import cycle
 from math import ceil
 
 import torch
@@ -27,8 +26,7 @@ class WGanGradientPolicy:
         # Calculate interpolation
         eps = torch.rand((batch_size, 1, 1, 1), device=self._device)
         eps = eps.expand_as(real_data)
-        interpolated = eps * real_data.data + (1 - eps) * fake_data.data
-        interpolated.requires_grad = True
+        interpolated = eps * real_data + (1 - eps) * fake_data
 
         d_output = self._discriminator(interpolated)
         gradients = torch.autograd.grad(
@@ -36,7 +34,6 @@ class WGanGradientPolicy:
             inputs=interpolated,
             grad_outputs=torch.ones(d_output.size(), device=self._device),
             create_graph=True,
-            retain_graph=True,
         )[0]
 
         gradients = gradients.reshape(batch_size, -1)
@@ -75,12 +72,12 @@ class WGanGradientPolicy:
                 fake_data = self._generator.sample(batch.shape[0])
                 gp = self.gradient_penalty(batch, fake_data)
                 d_loss = self._discriminator(fake_data).mean() - self._discriminator(batch).mean() + self._gp_cf * gp
-                d_loss.backward(retain_graph=True)
+                d_loss.backward()
                 d_optim.step()
                 postfix["d_loss"] = d_loss.item()
 
                 # generator update
-                if i % n_critic_step == 0:
+                if total_iter % n_critic_step == 0:
                     g_optim.zero_grad()
                     fake_data = self._generator.sample(batch.shape[0])
                     g_loss = -self._discriminator(fake_data).mean()
