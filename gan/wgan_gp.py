@@ -52,7 +52,7 @@ class WGanGradientPolicy:
         self._generator.train()
         self._discriminator.train()
 
-        n_epochs = int(ceil(n_critic_step * n_iterations / len(train_dataloader)))
+        n_epochs = int(ceil(n_iterations / len(train_dataloader)))
 
         g_optim = AdamW(self._generator.parameters(), lr=lr, betas=(beta1, beta2))
         g_scheduler = LambdaLR(g_optim, lr_lambda=lambda e: (n_epochs - e) / n_epochs)
