@@ -7,7 +7,6 @@ from PIL import Image as PILImage
 from torchvision import transforms as transforms
 
 from .hw7_is.hw7_models import GoogLeNet
-from .pytorch_utils import *
 from .utils import *
 
 CLASSES = ("plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck")
@@ -18,7 +17,7 @@ import sys
 
 softmax = None
 model = None
-device = torch.device("cuda:0")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 def plot_gan_training(losses, title, fname):
@@ -50,7 +49,7 @@ def calculate_is(samples):
     assert len(samples[0].shape) == 3
 
     model = GoogLeNet().to(device)
-    model.load_state_dict(torch.load("dul_2021/utils/hw7_is/classifier.pt"))
+    model.load_state_dict(torch.load(join(os.getcwd(), "utils/hw7_is/classifier.pt"), map_location=device))
     softmax = nn.Sequential(model, nn.Softmax(dim=1))
 
     bs = 100
@@ -61,8 +60,8 @@ def calculate_is(samples):
         for i in range(n_batches):
             sys.stdout.write(".")
             sys.stdout.flush()
-            inp = FloatTensor(samples[(i * bs) : min((i + 1) * bs, len(samples))]).to(device)
-            pred = get_numpy(softmax(inp))
+            inp = torch.tensor(samples[(i * bs) : min((i + 1) * bs, len(samples))]).float().to(device)
+            pred = softmax(inp).detach().cpu().numpy()
             preds.append(pred)
     preds = np.concatenate(preds, 0)
     kl = preds * (np.log(preds) - np.log(np.expand_dims(np.mean(preds, 0), 0)))

@@ -50,4 +50,4 @@ class SNGanDiscriminator32x32to128(nn.Module):
         # [B; 128]
         z = torch.sum(z, dim=(2, 3))
         # [B; 1]
-        return self.fc(z)
+        return self._fc(z)
