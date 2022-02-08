@@ -50,7 +50,7 @@ class ContextEncoder:
 
             with torch.no_grad():
                 discriminator_ans = self.discriminator(reconstruction)
-            adv_loss = F.binary_cross_entropy(discriminator_ans, torch.zeros((bs, 1), device=self.device))
+            adv_loss = F.binary_cross_entropy(discriminator_ans, torch.ones((bs, 1), device=self.device))
 
             loss = adv_loss + mse_loss
 
