@@ -37,19 +37,25 @@ class ContextEncoder:
             real_patches = self.discriminator(patches)
             fake_patches = self.discriminator(reconstruction)
 
-            adv_loss = F.binary_cross_entropy(real_patches, torch.ones((bs, 1), device=self.device))
-            adv_loss += F.binary_cross_entropy(fake_patches, torch.zeros((bs, 1), device=self.device))
+            d_loss = F.binary_cross_entropy(real_patches, torch.ones((bs, 1), device=self.device))
+            d_loss += F.binary_cross_entropy(fake_patches, torch.zeros((bs, 1), device=self.device))
 
             d_optim.zero_grad()
-            adv_loss.backward()
+            d_loss.backward()
             d_optim.step()
 
             embeddings = self.encoder(images)
             reconstruction = self.decoder(embeddings)
             mse_loss = F.mse_loss(reconstruction, patches)
 
+            with torch.no_grad():
+                discriminator_ans = self.discriminator(reconstruction)
+            adv_loss = F.binary_cross_entropy(discriminator_ans, torch.zeros((bs, 1), device=self.device))
+
+            loss = adv_loss + mse_loss
+
             ed_optim.zero_grad()
-            mse_loss.backward()
+            loss.backward()
             ed_optim.step()
 
             adv_losses.append(adv_loss.item())

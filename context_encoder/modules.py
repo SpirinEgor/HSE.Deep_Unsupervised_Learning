@@ -62,7 +62,7 @@ class PatchDecoder(nn.Module):
         sized = self.linear(images)
         sized = sized.view(-1, 128, 2, 2)
         decoded = self.blocks(sized)
-        return torch.sigmoid(decoded)
+        return torch.tanh(decoded)
 
 
 class PatchDiscriminator(nn.Module):
