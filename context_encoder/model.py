@@ -16,6 +16,12 @@ class ContextEncoder:
         self.discriminator = PatchDiscriminator().to(device)
         self.device = device
 
+    def to_mnist(self, patch):
+        mask = patch < 0
+        patch[mask] = -1
+        patch[~mask] = 1
+        return patch
+
     def _train_epoch(self, train_dataloader: DataLoader, ed_optim: Optimizer, d_optim: Optimizer):
         self.encoder.train()
         self.decoder.train()
@@ -33,6 +39,7 @@ class ContextEncoder:
             with torch.no_grad():
                 embeddings = self.encoder(images)
                 reconstruction = self.decoder(embeddings)
+                reconstruction = self.to_mnist(reconstruction)
 
             real_patches = self.discriminator(patches)
             fake_patches = self.discriminator(reconstruction)
