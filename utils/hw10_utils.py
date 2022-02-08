@@ -45,11 +45,10 @@ def show_samples(img):
 
 def plot_ce_training(train_ae, train_clf, title="Losses"):
     plt.figure()
-    x = np.arange(len(train_ae)) / len(train_ae)
-    x2 = np.arange(len(train_clf)) / len(train_clf) * len(train_ae)
+    x = np.arange(len(train_ae))
 
     plt.plot(x, train_ae, label="ae loss")
-    plt.plot(x2, train_clf, label="clf loss")
+    plt.plot(x, train_clf, label="clf loss")
 
     plt.legend()
     plt.title(title)
