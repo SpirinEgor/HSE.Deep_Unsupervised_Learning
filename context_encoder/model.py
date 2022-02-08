@@ -74,3 +74,8 @@ class ContextEncoder:
             adv_losses += epoch_adv_losses
         epoch_bar.close()
         return rec_losses, adv_losses
+
+    def eval(self):
+        self.encoder.eval()
+        self.decoder.eval()
+        self.discriminator.eval()
