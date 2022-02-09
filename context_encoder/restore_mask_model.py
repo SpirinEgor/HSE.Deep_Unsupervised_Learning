@@ -6,21 +6,15 @@ from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm, trange
 
-from context_encoder.modules import MaskedImageEncoder, PatchDecoder, PatchDiscriminator
+from context_encoder.modules import ImageEncoder, PatchDecoder, PatchDiscriminator
 
 
 class ContextEncoder:
     def __init__(self, latent_dim: int, device: torch.device):
-        self.encoder = MaskedImageEncoder(latent_dim).to(device)
+        self.encoder = ImageEncoder(latent_dim).to(device)
         self.decoder = PatchDecoder(latent_dim).to(device)
         self.discriminator = PatchDiscriminator().to(device)
         self.device = device
-
-    def to_mnist(self, patch):
-        mask = patch < 0
-        patch[mask] = -1
-        patch[~mask] = 1
-        return patch
 
     def _train_epoch(self, train_dataloader: DataLoader, ed_optim: Optimizer, d_optim: Optimizer):
         self.encoder.train()
@@ -39,7 +33,6 @@ class ContextEncoder:
             with torch.no_grad():
                 embeddings = self.encoder(images)
                 reconstruction = self.decoder(embeddings)
-                reconstruction = self.to_mnist(reconstruction)
 
             real_patches = self.discriminator(patches)
             fake_patches = self.discriminator(reconstruction)

@@ -24,7 +24,7 @@ class Block(nn.Module):
         return self.act(self.conv(x))
 
 
-class MaskedImageEncoder(nn.Module):
+class ImageEncoder(nn.Module):
     def __init__(self, latent_dim: int):
         super().__init__()
 

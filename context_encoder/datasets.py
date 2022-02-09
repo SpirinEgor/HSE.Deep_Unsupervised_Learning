@@ -1,10 +1,12 @@
+from random import choice
 from typing import Tuple
 
 import torch
 from torch.utils.data import Dataset
+from torchvision.transforms.functional import rotate
 
 
-class ContextDataset(Dataset):
+class MaskedImageDataset(Dataset):
     _img_h, _img_w = 28, 28
     _crop_h, _crop_w = 14, 14
 
@@ -30,3 +32,21 @@ class ContextDataset(Dataset):
         h_p, w_p = cls._crop_h // 2, cls._crop_w // 2
         mask[:, h_c - h_p : h_c + h_p, w_c - w_p : w_c + w_p] = True
         return mask
+
+
+class RotationDataset(Dataset):
+    _rotations = [0, 90, 180, 270]
+
+    def __init__(self, data):
+        self._data = data
+
+    def __len__(self):
+        return len(self._data)
+
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
+        image, _ = self._data[idx]
+        rot = choice(self._rotations)
+        rot_idx = self._rotations.index(rot)
+
+        image = rotate(image, rot)
+        return image, rot_idx
