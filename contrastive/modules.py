@@ -16,12 +16,14 @@ class Block(nn.Module):
         super().__init__()
         self.upsample = upsample
         self.conv = nn.Conv2d(in_ch, out_ch, (3, 3), stride=stride, padding=1, bias=bias)
+        self.norm = nn.BatchNorm2d(out_ch)
+        self.dropout = nn.Dropout(0.3)
         self.act = nn.LeakyReLU(lr_cf)
 
     def forward(self, x):
         if self.upsample:
             x = F.interpolate(x, scale_factor=2, mode="bilinear", align_corners=False, recompute_scale_factor=False)
-        return self.act(self.conv(x))
+        return self.act(self.dropout(self.norm(self.conv(x))))
 
 
 class ImageEncoder(nn.Module):
