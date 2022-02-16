@@ -25,8 +25,11 @@ class BYOL:
             [
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomResizedCrop(size=28),
-                transforms.GaussianBlur(5, sigma=(0.1, 2.0)),
-                transforms.Normalize(0.5, 0.5),
+                transforms.RandomApply(
+                    [transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.1)], p=0.8
+                ),
+                transforms.GaussianBlur(kernel_size=9),
+                transforms.Normalize((0.5,), (0.5,)),
             ]
         )
 
