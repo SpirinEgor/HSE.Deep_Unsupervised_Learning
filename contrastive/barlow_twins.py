@@ -1,32 +1,43 @@
+from itertools import chain
+
 import torch
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 from tqdm.auto import trange, tqdm
 
-from contrastive.modules import ImageEncoder
+from contrastive.modules import ImageEncoder, Predictor
+
+
+def off_diagonal(x):
+    # return a flattened view of the off-diagonal elements of a square matrix
+    n, m = x.shape
+    assert n == m
+    return x.flatten()[:-1].view(n - 1, n + 1)[:, 1:].flatten()
 
 
 class BarlowTwins:
     def __init__(self, latent_dim: int, device: torch.device, lmbda: float = 0.01):
         self.encoder = ImageEncoder(3, latent_dim).to(device)
+        self.projector = Predictor(latent_dim)
+
         self.transforms = transforms.Compose(
             [
                 transforms.RandomHorizontalFlip(),
-                transforms.RandomResizedCrop(size=28),
+                transforms.RandomResizedCrop(size=32),
+                transforms.GaussianBlur(kernel_size=9),
                 transforms.RandomApply(
                     [transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.1)], p=0.8
                 ),
-                transforms.GaussianBlur(kernel_size=9),
+                transforms.RandomGrayscale(0.2),
                 transforms.Normalize((0.5,), (0.5,)),
             ]
         )
         self.device = device
         self.lmbda = lmbda
 
-    def step(self, a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-        # compute embeddings
-        z_a = self.encoder(a)  # NxD
-        z_b = self.encoder(b)  # NxD
+    def step(self, y1: torch.Tensor, y2: torch.Tensor) -> torch.Tensor:
+        z_a = self.projector(self.encoder(y1))
+        z_b = self.projector(self.encoder(y2))
         bs, dim = z_a.shape
 
         # normalize repr. along the batch dimension
@@ -46,10 +57,11 @@ class BarlowTwins:
         loss = c_diff.sum()
         return loss
 
-    def fit(self, train_dataloader: DataLoader, lr: float = 3e-4, n_epochs: int = 5):
-        optim = torch.optim.AdamW(self.encoder.parameters(), lr=lr, weight_decay=1e-4)
+    def fit(self, train_dataloader: DataLoader, lr: float = 1e-4, n_epochs: int = 5):
+        optim = torch.optim.AdamW(chain(self.encoder.parameters(), self.projector.parameters()), lr=lr)
         losses = []
         self.encoder.train()
+        self.projector.train()
         for e in trange(n_epochs, desc="Epochs"):
             is_last_epoch = e == n_epochs - 1
             train_tqdm_bar = tqdm(train_dataloader, desc="Training", leave=is_last_epoch)

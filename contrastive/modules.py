@@ -13,7 +13,7 @@ class Block(nn.Module):
         super().__init__()
         self.conv = nn.Conv2d(in_ch, out_ch, (3, 3), stride=stride, padding=1)
         self.norm = nn.BatchNorm2d(out_ch)
-        self.dropout = nn.Dropout(0.5)
+        self.dropout = nn.Dropout(0.4)
         self.act = nn.LeakyReLU(lr_cf)
 
     def forward(self, x):
