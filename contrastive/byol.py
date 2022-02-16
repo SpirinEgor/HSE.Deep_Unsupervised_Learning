@@ -1,4 +1,3 @@
-from copy import deepcopy
 from itertools import chain
 
 import torch
@@ -12,9 +11,9 @@ from contrastive.modules import ImageEncoder, Predictor
 
 class BYOL:
     def __init__(self, latent_dim: int, device: torch.device, m: float = 0.99):
-        self.student = ImageEncoder(latent_dim).to(device)
+        self.student = ImageEncoder(1, latent_dim).to(device)
 
-        self.teacher = deepcopy(self.student)
+        self.teacher = ImageEncoder(1, latent_dim).to(device)
         for st_param, t_param in zip(self.student.parameters(), self.teacher.parameters()):
             t_param.data.copy_(st_param.data)
             t_param.requires_grad = False
