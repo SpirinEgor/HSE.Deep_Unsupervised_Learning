@@ -26,6 +26,7 @@ class BYOL:
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomResizedCrop(size=28),
                 transforms.GaussianBlur(5, sigma=(0.1, 2.0)),
+                transforms.Normalize(0.5, 0.5),
             ]
         )
 
