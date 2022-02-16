@@ -1,18 +1,20 @@
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as opt
 import torch.utils.data as data
 from sklearn.metrics import accuracy_score
 from torchvision import transforms
 from torchvision.datasets import MNIST, CIFAR10
+from tqdm.auto import trange
 
 from .utils import *
 
 
 class Classifier(nn.Module):
-    def __init__(self):
+    def __init__(self, in_dim: int):
         super().__init__()
         self.model = nn.Sequential(
-            nn.Linear(128, 256),
+            nn.Linear(in_dim, 256),
             nn.ReLU(),
             nn.Linear(256, 128),
             nn.ReLU(),
@@ -56,7 +58,7 @@ class Classifier(nn.Module):
             scheduler.step()
 
 
-def test_classification(test_data, encoder, it=10):
+def test_classification(test_data, encoder, latent_dim: int = 128, it=10):
     encoded = []
     ys = []
     test_loader = data.DataLoader(test_data, batch_size=100, shuffle=False)
@@ -67,7 +69,7 @@ def test_classification(test_data, encoder, it=10):
             ys.append(y)
 
     res = []
-    for i in range(it):
+    for i in trange(it, desc="Test classification"):
         clf_train_data = torch.cat(encoded[: 10 * i] + encoded[10 * (i + 1) :], dim=0)
         clf_train_labels = torch.cat(ys[: 10 * i] + ys[10 * (i + 1) :])
         clf_test_data = torch.cat(encoded[10 * i : 10 * (i + 1)], dim=0)
@@ -76,7 +78,7 @@ def test_classification(test_data, encoder, it=10):
         clf_train = data.TensorDataset(clf_train_data, clf_train_labels)
         clf_test = data.TensorDataset(clf_test_data, clf_test_labels)
 
-        clf = Classifier()
+        clf = Classifier(latent_dim)
 
         clf.fit(clf_train)
 
@@ -130,11 +132,11 @@ def plot_training(losses, title="Losses"):
 
 def q1_results(q1, accuracy=False):
     train_data, test_data = get_data("MNIST")
-    losses, encoder = q1(train_data)
+    losses, encoder, latent_dim = q1(train_data)
 
     plot_training(losses)
     if accuracy:
-        acc = test_classification(test_data, encoder)
+        acc = test_classification(test_data, encoder, latent_dim=latent_dim)
         print(f"mean classification accuracy={np.mean(acc):.4f}")
 
 
