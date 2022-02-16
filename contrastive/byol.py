@@ -2,6 +2,7 @@ from copy import deepcopy
 from itertools import chain
 
 import torch
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 from tqdm.auto import trange, tqdm
@@ -10,7 +11,7 @@ from contrastive.modules import ImageEncoder, Predictor
 
 
 class BYOL:
-    def __init__(self, latent_dim: int, device: torch.device, m: float = 4e-3):
+    def __init__(self, latent_dim: int, device: torch.device, m: float = 0.99):
         self.student = ImageEncoder(latent_dim).to(device)
 
         self.teacher = deepcopy(self.student)
@@ -30,17 +31,22 @@ class BYOL:
         self.device = device
         self.m = m
 
-    @staticmethod
-    def regression_loss(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        norm_x = torch.linalg.norm(x, dim=-1)
-        norm_y = torch.linalg.norm(y, dim=-1)
-        return -2 * torch.mean(torch.sum(x * y, dim=-1) / (norm_x * norm_y))
+    def step(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        x = self.predictor(self.student(x))
+        norm_x = F.normalize(x, dim=1)
+
+        with torch.no_grad():
+            y = self.teacher(y)
+            norm_y = F.normalize(y, dim=1)
+
+        loss = 2 - 2 * (norm_x * norm_y).sum(dim=-1)
+        return loss
 
     def update_teacher(self):
         for st_param, t_param in zip(self.student.parameters(), self.teacher.parameters()):
-            t_param.data = t_param.data + (1 - self.m) * (st_param.data - t_param.data)
+            t_param.data = t_param.data * self.m + st_param.data * (1 - self.m)
 
-    def fit(self, train_dataloader: DataLoader, lr: float = 1e-3, n_epochs: int = 5):
+    def fit(self, train_dataloader: DataLoader, lr: float = 3e-4, n_epochs: int = 5):
         optim = torch.optim.AdamW(chain(self.student.parameters(), self.predictor.parameters()), lr=lr)
         losses = []
         self.student.train()
@@ -53,14 +59,8 @@ class BYOL:
                 x = self.transforms(batch).to(self.device)
                 y = self.transforms(batch).to(self.device)
 
-                student_out_1 = self.predictor(self.student(x))
-                student_out_2 = self.predictor(self.student(y))
-                with torch.no_grad():
-                    teacher_out_1 = self.teacher(x)
-                    teacher_out_2 = self.teacher(y)
-
-                loss = self.regression_loss(student_out_1, teacher_out_2)
-                loss += self.regression_loss(student_out_2, teacher_out_1)
+                loss = self.step(x, y) + self.step(y, x)
+                loss = loss.mean()
 
                 optim.zero_grad()
                 loss.backward()
