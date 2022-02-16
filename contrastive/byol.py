@@ -77,4 +77,5 @@ class BYOL:
     def encode(self, x: torch.Tensor):
         self.student.eval()
         with torch.no_grad():
+            x = x.to(self.device)
             return self.student(x).detach()
