@@ -18,7 +18,7 @@ def off_diagonal(x):
 class BarlowTwins:
     def __init__(self, latent_dim: int, device: torch.device, lmbda: float = 0.01):
         self.encoder = ImageEncoder(3, latent_dim).to(device)
-        self.projector = Predictor(latent_dim)
+        self.projector = Predictor(latent_dim).to(device)
 
         self.transforms = transforms.Compose(
             [
