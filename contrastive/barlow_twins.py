@@ -37,7 +37,7 @@ class BarlowTwins:
         c = torch.mm(z_a_norm.T, z_b_norm) / bs  # DxD
 
         # loss
-        c_diff = (c - torch.eye(dim)).pow(2)  # DxD
+        c_diff = (c - torch.eye(dim, device=self.device)).pow(2)  # DxD
 
         # multiply off-diagonal elems of c_diff by lambda
         c_diff *= self.lmbda
