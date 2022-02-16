@@ -15,8 +15,9 @@ class BYOL:
         self.student = ImageEncoder(latent_dim).to(device)
 
         self.teacher = deepcopy(self.student)
-        for param in self.teacher.parameters():
-            param.requires_grad = False
+        for st_param, t_param in zip(self.student.parameters(), self.teacher.parameters()):
+            t_param.data.copy_(st_param.data)
+            t_param.requires_grad = False
 
         self.predictor = Predictor(latent_dim).to(device)
 
@@ -47,7 +48,9 @@ class BYOL:
             t_param.data = t_param.data * self.m + st_param.data * (1 - self.m)
 
     def fit(self, train_dataloader: DataLoader, lr: float = 3e-4, n_epochs: int = 5):
-        optim = torch.optim.AdamW(chain(self.student.parameters(), self.predictor.parameters()), lr=lr)
+        optim = torch.optim.AdamW(
+            chain(self.student.parameters(), self.predictor.parameters()), lr=lr, weight_decay=1e-4
+        )
         losses = []
         self.student.train()
         self.predictor.train()
