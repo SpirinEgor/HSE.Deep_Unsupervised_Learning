@@ -35,12 +35,6 @@ class VAT:
         self.vat_eps = vat_xi
 
     @staticmethod
-    def _l2_normalize(d):
-        d_reshaped = d.view(d.shape[0], -1, *(1 for _ in range(d.dim() - 2)))
-        d /= torch.norm(d_reshaped, dim=1, keepdim=True) + 1e-8
-        return d
-
-    @staticmethod
     @contextlib.contextmanager
     def _disable_tracking_bn_stats(model):
         def switch_attr(m):
@@ -53,11 +47,10 @@ class VAT:
 
     def val_loss(self, batched_images: torch.Tensor) -> torch.Tensor:
         with torch.no_grad():
-            pred = F.softmax(self.model(batched_images), dim=1)
+            pred = F.log_softmax(self.model(batched_images), dim=1)
 
         # prepare random unit tensor
         d = torch.normal(mean=0, std=1, size=batched_images.shape, device=self.device)
-        d = self._l2_normalize(d)
 
         with self._disable_tracking_bn_stats(self.model):
             # calc adversarial direction
@@ -66,7 +59,7 @@ class VAT:
             logp_hat = F.log_softmax(pred_hat, dim=1)
             adv_distance = F.kl_div(logp_hat, pred, reduction="batchmean")
             adv_distance.backward()
-            r_adv = self._l2_normalize(d.grad)
+            r_adv = d.grad
             self.model.zero_grad()
 
             # calc LDS
@@ -79,13 +72,15 @@ class VAT:
     def test(self, dataloader: DataLoader):
         self.model.eval()
         n_correct = 0
+        total = 0
         for img, y in dataloader:
             img = img.to(self.device)
             y = y.to(self.device)
             with torch.no_grad():
                 y_pred = self.model(img).argmax(dim=-1)
                 n_correct += (y == y_pred).sum().item()
-        return n_correct / len(dataloader)
+                total += y.shape[0]
+        return n_correct / total
 
     def fit(self, train_dataloader: DataLoader, test_dataloader: DataLoader, n_epochs: int, lr: float = 1e-4):
         optim = AdamW(self.model.parameters(), lr=lr)
