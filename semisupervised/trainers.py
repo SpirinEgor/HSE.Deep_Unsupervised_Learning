@@ -47,7 +47,7 @@ class SemiSupervisedTrainer:
     def unlabeled_loss(self, batched_images: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError()
 
-    def fit(self, train_dataloader: DataLoader, test_dataloader: DataLoader, n_epochs: int, lr: float = 1e-4):
+    def fit(self, train_dataloader: DataLoader, test_dataloader: DataLoader, n_epochs: int, lr: float = 1e-3):
         optim = AdamW(self.model.parameters(), lr=lr)
 
         train_losses = []
@@ -125,7 +125,7 @@ class VAT(SemiSupervisedTrainer):
 
 class FixMatch(SemiSupervisedTrainer):
     def __init__(
-        self, n_classes: int, device: torch.device, latent_dim: int = 128, tau: float = 0.7, lambda_u: float = 10
+        self, n_classes: int, device: torch.device, latent_dim: int = 128, tau: float = 0.95, lambda_u: float = 1
     ):
         super().__init__(n_classes, device, latent_dim, lambda_u)
         self.tau = tau
@@ -146,9 +146,13 @@ class FixMatch(SemiSupervisedTrainer):
     def unlabeled_loss(self, batched_images: torch.Tensor) -> torch.Tensor:
         with torch.no_grad():
             logits = self.model(self.weak_transforms(batched_images))
-            probs = F.softmax(logits / self.tau, dim=-1)
+            probs = F.softmax(logits, dim=-1)
             confidence, pseudo_target = torch.max(probs, dim=-1)
+            mask = confidence >= self.tau
+
+        if mask.sum() == 0:
+            return 0
 
         strong_out = self.model(self.strong_transforms(batched_images))
-        loss = F.cross_entropy(strong_out, pseudo_target)
+        loss = F.cross_entropy(strong_out[mask], pseudo_target[mask])
         return loss
