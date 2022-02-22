@@ -113,7 +113,7 @@ class VAT(SemiSupervisedTrainer):
             adv_distance = F.kl_div(logp_hat, pred, reduction="batchmean")
 
             adv_distance.backward()
-            r_adv = F.normalize(d.grad)
+            r_adv = F.normalize(d.grad, dim=(1, 2, 3))
             self.model.zero_grad()
 
             pred_hat = self.model(batched_images + r_adv)
