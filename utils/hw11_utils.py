@@ -3,6 +3,9 @@ import torch.nn.functional as F
 import torch.optim as opt
 import torch.utils.data as data
 from sklearn.metrics import accuracy_score
+from torch.nn import functional as F
+import torch
+
 from torchvision import transforms
 from torchvision.datasets import MNIST, CIFAR10
 from tqdm.auto import trange
