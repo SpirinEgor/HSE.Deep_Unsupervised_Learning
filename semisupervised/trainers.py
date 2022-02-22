@@ -71,6 +71,7 @@ class SemiSupervisedTrainer:
                 loss = ce_loss + self.u_loss_weight * unsupervised_loss
 
                 optim.zero_grad()
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 5)
                 loss.backward()
                 optim.step()
 
