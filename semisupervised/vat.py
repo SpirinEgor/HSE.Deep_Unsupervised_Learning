@@ -14,23 +14,25 @@ class ImageClassifier(nn.Module):
     def __init__(self, n_classes: int, latent_dim: int = 128, lr_cf: float = 1e-2):
         super().__init__()
         self.encoder = ImageEncoder(3, latent_dim)
+        self.batch_norm = nn.BatchNorm1d(latent_dim)
         self.leaky_relu = nn.LeakyReLU(lr_cf)
         self.classifier = nn.Linear(latent_dim, n_classes)
 
     def forward(self, batched_images: torch.Tensor) -> torch.Tensor:
         encoded = self.encoder(batched_images)
-        return self.classifier(self.leaky_relu(encoded))
+        hidden = self.leaky_relu(self.batch_norm(encoded))
+        return self.classifier(hidden)
 
 
 class VAT:
     def __init__(
-        self, n_classes: int, device: torch.device, vat_alpha: float = 1.0, vat_eps: float = 10, latent_dim: int = 128
+        self, n_classes: int, device: torch.device, vat_alpha: float = 1.0, vat_xi: float = 10, latent_dim: int = 128
     ):
         self.model = ImageClassifier(n_classes, latent_dim).to(device)
         self.device = device
 
         self.vat_alpha = vat_alpha
-        self.vat_eps = vat_eps
+        self.vat_eps = vat_xi
 
     @staticmethod
     def _l2_normalize(d):
