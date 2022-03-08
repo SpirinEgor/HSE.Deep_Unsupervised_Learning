@@ -48,6 +48,7 @@ class RealNVPTrainer:
         self.real_nvp.eval()
         losses = []
         for batch in tqdm(test_dataloader, desc="Testing", leave=False):
+            batch = batch.to(self.device)
             losses.append(self.common_step(batch).item())
         return sum(losses) / len(losses)
 
