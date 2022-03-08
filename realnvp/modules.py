@@ -70,7 +70,7 @@ class AffineCouplingWithCheckerboard(nn.Module):
 
     def forward(self, batch: torch.Tensor, reverse: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
         bs, n_channels, *_ = batch.shape
-        mask = self.mask.repeat(bs, 1, 1, 1)
+        mask = self.mask.repeat(bs, 1, 1, 1).to(batch.device)
 
         masked_batch = batch * mask
 
