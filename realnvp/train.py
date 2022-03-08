@@ -57,7 +57,8 @@ class RealNVPTrainer:
 
         optim = AdamW(self.real_nvp.parameters(), lr=lr)
 
-        for _ in (pbar := trange(epochs, desc="Training")):
+        pbar = trange(epochs, desc="Training")
+        for _ in pbar:
             self.real_nvp.train()
             for i, batch in enumerate(train_dataloader):
                 batch = batch.to(self.device)
@@ -72,6 +73,7 @@ class RealNVPTrainer:
 
             test_losses.append(self.test(test_dataloader))
             tqdm.write(f"Test loss: {test_losses[-1]}")
+        pbar.close()
 
         return train_losses, test_losses
 
