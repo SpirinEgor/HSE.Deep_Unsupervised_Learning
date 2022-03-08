@@ -119,29 +119,26 @@ class AffineCouplingWithChannels(nn.Module):
 class RealNVP(nn.Module):
     def __init__(self, hidden_dim: int = 128):
         super().__init__()
-        self.checker_transforms = [
-            nn.ModuleList(
-                [
-                    AffineCouplingWithCheckerboard(1, hidden_ch=hidden_dim),
-                    ActNorm(3),
-                    AffineCouplingWithCheckerboard(0, hidden_ch=hidden_dim),
-                    ActNorm(3),
-                    AffineCouplingWithCheckerboard(1, hidden_ch=hidden_dim),
-                    ActNorm(3),
-                    AffineCouplingWithCheckerboard(0, hidden_ch=hidden_dim),
-                ]
-            ),
-            nn.ModuleList(
-                [
-                    AffineCouplingWithCheckerboard(1, hidden_ch=hidden_dim),
-                    ActNorm(3),
-                    AffineCouplingWithCheckerboard(0, hidden_ch=hidden_dim),
-                    ActNorm(3),
-                    AffineCouplingWithCheckerboard(1, hidden_ch=hidden_dim),
-                ]
-            ),
-        ]
-
+        self.checker_transforms_a = nn.ModuleList(
+            [
+                AffineCouplingWithCheckerboard(1, hidden_ch=hidden_dim),
+                ActNorm(3),
+                AffineCouplingWithCheckerboard(0, hidden_ch=hidden_dim),
+                ActNorm(3),
+                AffineCouplingWithCheckerboard(1, hidden_ch=hidden_dim),
+                ActNorm(3),
+                AffineCouplingWithCheckerboard(0, hidden_ch=hidden_dim),
+            ]
+        )
+        self.checker_transforms_b = nn.ModuleList(
+            [
+                AffineCouplingWithCheckerboard(1, hidden_ch=hidden_dim),
+                ActNorm(3),
+                AffineCouplingWithCheckerboard(0, hidden_ch=hidden_dim),
+                ActNorm(3),
+                AffineCouplingWithCheckerboard(1, hidden_ch=hidden_dim),
+            ]
+        )
         self.channel_transforms = nn.ModuleList(
             [
                 AffineCouplingWithChannels(True, hidden_ch=hidden_dim),
@@ -155,7 +152,7 @@ class RealNVP(nn.Module):
     def forward(self, batch: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         log_det = torch.zeros_like(batch)
 
-        for i, trans in enumerate([self.checker_transforms[0], self.channel_transforms, self.checker_transforms[1]]):
+        for i, trans in enumerate([self.checker_transforms_a, self.channel_transforms, self.checker_transforms_b]):
             for t in trans:
                 batch, d = t(batch)
                 log_det += d
@@ -168,7 +165,7 @@ class RealNVP(nn.Module):
         return batch, log_det
 
     def generate(self, z: torch.Tensor) -> torch.Tensor:
-        for i, trans in enumerate([self.checker_transforms[1], self.channel_transforms, self.checker_transforms[0]]):
+        for i, trans in enumerate([self.checker_transforms_b, self.channel_transforms, self.checker_transforms_a]):
             for t in reversed(trans):
                 z, _ = t(z, True)
 
