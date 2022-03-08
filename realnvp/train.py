@@ -13,7 +13,7 @@ from realnvp.modules import RealNVP
 
 class RealNVPTrainer:
     def __init__(self, device: torch.device, alpha: float = 0.05, hidden_dim: int = 128):
-        self.real_nvp = RealNVP(hidden_dim)
+        self.real_nvp = RealNVP(hidden_dim).to(device)
         self.device = device
         self.bdist = Normal(torch.tensor([0.0], device=device), torch.tensor([1.0], device=device))
         self.alpha = alpha

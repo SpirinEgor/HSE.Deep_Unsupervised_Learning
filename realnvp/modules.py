@@ -70,7 +70,7 @@ class AffineCouplingWithCheckerboard(nn.Module):
 
     def forward(self, batch: torch.Tensor, reverse: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
         bs, n_channels, *_ = batch.shape
-        mask = self.mask.repeat(bs, 1, 1, 1).to(batch.device)
+        mask = self.mask.repeat(bs, 1, 1, 1)
 
         masked_batch = batch * mask
 
@@ -174,12 +174,6 @@ class RealNVP(nn.Module):
             elif i == 1:
                 z = unsqueeze(z)
         return z
-
-    def to(self, *args, **kwargs):
-        super().to(*args, **kwargs)
-        for ml in [self.channel_transforms, self.checker_transforms_a, self.checker_transforms_b]:
-            for m in ml:
-                m.to(*args, **kwargs)
 
 
 def squeeze(x: torch.Tensor) -> torch.Tensor:
