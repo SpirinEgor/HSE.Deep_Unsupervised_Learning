@@ -175,6 +175,12 @@ class RealNVP(nn.Module):
                 z = unsqueeze(z)
         return z
 
+    def to(self, *args, **kwargs):
+        super().to(*args, **kwargs)
+        for ml in [self.channel_transforms, self.checker_transforms_a, self.checker_transforms_b]:
+            for m in ml:
+                m.to(*args, **kwargs)
+
 
 def squeeze(x: torch.Tensor) -> torch.Tensor:
     b, c, h, w = x.shape
