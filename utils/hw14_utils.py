@@ -36,13 +36,10 @@ class ImageDataset(data.Dataset):
 def dataset_from_labels(imgs, targets, class_set, transform=None):
     targets = torch.Tensor(targets)
     class_mask = (targets[:, None] == class_set[None, :]).any(dim=-1)
-    return ImageDataset(imgs=imgs[class_mask],
-                        targets=targets[class_mask],
-                        img_transform=transform)
+    return ImageDataset(imgs=imgs[class_mask], targets=targets[class_mask], img_transform=transform)
 
 
 class FewShotBatchSampler(object):
-
     def __init__(self, dataset_targets, N_way, K_shot, include_query=True, shuffle=True):
         """
         Inputs:
@@ -90,10 +87,10 @@ class FewShotBatchSampler(object):
 
         start_index = defaultdict(int)
         for it in range(self.iterations):
-            class_batch = self.class_list[it * self.N_way:(it + 1) * self.N_way]  # Select N classes for the batch
+            class_batch = self.class_list[it * self.N_way : (it + 1) * self.N_way]  # Select N classes for the batch
             index_batch = []
             for c in class_batch:  # For each class, select the next K examples and add them to the batch
-                index_batch.extend(self.indices_per_class[c][start_index[c]:start_index[c] + self.K_shot])
+                index_batch.extend(self.indices_per_class[c][start_index[c] : start_index[c] + self.K_shot])
                 start_index[c] += self.K_shot
             if self.include_query:
                 index_batch = index_batch[::2] + index_batch[1::2]
@@ -110,8 +107,8 @@ def split_batch(imgs, targets):
 
 
 def make_data(n_train, n_test, k_train, k_test):
-    train_set = MNIST(root='./', train=True, download=True, transform=transforms.ToTensor())
-    test_set = MNIST(root='./', train=False, download=True, transform=transforms.ToTensor())
+    train_set = MNIST(root="./", train=True, download=True, transform=transforms.ToTensor())
+    test_set = MNIST(root="./", train=False, download=True, transform=transforms.ToTensor())
 
     # Merging original training and test set
     all_images = np.concatenate([train_set.data, test_set.data], axis=0)
@@ -119,25 +116,24 @@ def make_data(n_train, n_test, k_train, k_test):
 
     train_classes, test_classes = torch.arange(10 - n_test), torch.arange(10 - n_test, 10)
 
-    transform = transforms.Compose([transforms.ToTensor(),
-                                    transforms.Normalize(0.5, 0.5)])
+    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
 
     train_set = dataset_from_labels(all_images, all_targets, train_classes, transform=transform)
     test_set = dataset_from_labels(all_images, all_targets, test_classes, transform=transform)
 
-    train_data_loader = data.DataLoader(train_set,
-                                        batch_sampler=FewShotBatchSampler(train_set.targets,
-                                                                          include_query=True,
-                                                                          N_way=n_train,
-                                                                          K_shot=k_train,
-                                                                          shuffle=True))
+    train_data_loader = data.DataLoader(
+        train_set,
+        batch_sampler=FewShotBatchSampler(
+            train_set.targets, include_query=True, N_way=n_train, K_shot=k_train, shuffle=True
+        ),
+    )
 
-    test_data_loader = data.DataLoader(test_set,
-                                       batch_sampler=FewShotBatchSampler(test_set.targets,
-                                                                         include_query=False,
-                                                                         N_way=n_test,
-                                                                         K_shot=k_test,
-                                                                         shuffle=False))
+    test_data_loader = data.DataLoader(
+        test_set,
+        batch_sampler=FewShotBatchSampler(
+            test_set.targets, include_query=False, N_way=n_test, K_shot=k_test, shuffle=False
+        ),
+    )
 
     return train_data_loader, test_data_loader, test_set
 
@@ -155,11 +151,11 @@ def show_imgs():
     fig, ax = plt.subplots(1, 2, figsize=(8, 5))
     ax[0].imshow(support_grid)
     ax[0].set_title("Support set")
-    ax[0].axis('off')
+    ax[0].axis("off")
     ax[1].imshow(query_grid)
     ax[1].set_title("Query set")
-    ax[1].axis('off')
-    plt.suptitle("Few Shot Batch", weight='bold')
+    ax[1].axis("off")
+    plt.suptitle("Few Shot Batch", weight="bold")
     plt.show()
     plt.close()
 
@@ -175,16 +171,16 @@ def test(net, test_data_loader, test_data, samples=10):
     return np.mean(accs)
 
 
-def plot_training(losses, title='Losses'):
+def plot_training(losses, title="Losses"):
     plt.figure()
     x = np.arange(len(losses))
 
-    plt.plot(x, losses, label='loss')
+    plt.plot(x, losses, label="loss")
 
     plt.legend()
     plt.title(title)
-    plt.xlabel('Iteration')
-    plt.ylabel('Loss')
+    plt.xlabel("Iteration")
+    plt.ylabel("Loss")
 
 
 def q1_results(q1):
