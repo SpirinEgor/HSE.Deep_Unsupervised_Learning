@@ -1,7 +1,9 @@
+from torch.utils.data import Dataset
+
 from .utils import *
 
 
-class SSDataset:
+class SSDataset(Dataset):
     def __init__(self, data, c=4000, train=True):
         self.data = data
         self.c = c
@@ -21,7 +23,7 @@ class SSDataset:
 
 def q12_results(q):
     train_data, test_data = get_data("CIFAR10")
-    train_data, test_data = SSDataset(train_data), SSDataset(test_data)
+    train_data, test_data = SSDataset(train_data), SSDataset(test_data, train=False)
 
     losses, accs = q(train_data, test_data)
 
@@ -29,9 +31,9 @@ def q12_results(q):
     plot_training(accs, "Accuracy")
 
 
-def b_resul(b):
+def b_results(b):
     train_data, test_data = get_data("MNIST", binary=True)
-    train_data, test_data = SSDataset(train_data), SSDataset(test_data)
+    train_data, test_data = SSDataset(train_data), SSDataset(test_data, train=False)
     losses, accs = b(train_data, test_data)
 
     plot_training(losses, "Loss")
