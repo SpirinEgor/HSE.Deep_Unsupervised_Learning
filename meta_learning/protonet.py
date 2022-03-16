@@ -15,9 +15,10 @@ class DownSampleBlock(nn.Module):
     def __init__(self, n_channels: int):
         super().__init__()
         self.main = nn.Sequential(
-            nn.Conv2d(n_channels, n_channels, kernel_size=2, stride=2, padding=0),
+            nn.Conv2d(n_channels, n_channels, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(n_channels, affine=True, track_running_stats=True),
             nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2),
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -33,11 +34,11 @@ class ProtoNet(nn.Module):
             nn.ReLU(inplace=True),
         ]
 
-        for _ in range(4):
-            # [h; 28; 28] -> [h; 14; 14] -> [h; 7; 7] -> [h; 3; 3] -> [h; 1; 1]
+        for _ in range(3):
+            # [h; 28; 28] -> [h; 14; 14] -> [h; 7; 7] -> [h; 3; 3]
             layers.append(DownSampleBlock(hidden_dim))
 
-        layers += [nn.Flatten(), nn.Linear(hidden_dim, embedding_dim)]
+        layers += [nn.Flatten(), nn.Linear(hidden_dim * 3 * 3, embedding_dim)]
         self.encoder = nn.Sequential(*layers)
         self.embedding_dim = embedding_dim
 
@@ -69,15 +70,13 @@ class ProtoNet(nn.Module):
         prototypes, unique_labels = self.get_prototypes(batch_imgs, batch_labels)
 
         pred = []
-        for batch in dloader:
+        for batch in tqdm(dloader):
             imgs, labels = [b.to(self.device) for b in batch]
 
             pred_idxs = torch.argmin(pairwise_dist(self.encoder(imgs), prototypes), dim=-1)
-            pred_labels = unique_labels[pred_idxs]
+            pred.append(unique_labels[pred_idxs])
 
-            pred.append(pred_labels.cpu().numpy())
-
-        return np.concatenate(pred)
+        return torch.stack(pred).detach().cpu().numpy()
 
 
 def pairwise_dist(x: Tensor, y: Tensor) -> Tensor:
