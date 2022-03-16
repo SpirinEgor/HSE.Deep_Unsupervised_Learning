@@ -29,7 +29,7 @@ def plot_dre(model, title=""):
         density_nu = norm.pdf(x, loc=-0.5, scale=0.25)
         density_de = norm.pdf(x, loc=0.5, scale=1)
 
-        ratio_pred = model.r(torch.FloatTensor(x.reshape(-1, 1))).cpu().numpy()
+        ratio_pred = model._net(torch.FloatTensor(x.reshape(-1, 1))).cpu().numpy()
 
         plt.figure()
 
