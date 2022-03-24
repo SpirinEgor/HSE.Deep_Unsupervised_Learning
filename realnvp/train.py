@@ -26,14 +26,14 @@ class RealNVPTrainer:
 
     def preprocess(self, batch: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         batch += Uniform(0, 0.1).sample(batch.shape).to(self.device)
-        batch = batch.clamp(0, 1)
+        batch /= batch.max(dim=-1, keepdim=True)[0]
 
-        batch = batch * (1 - self.alpha) + self.alpha
+        batch = batch * (1 - 2 * self.alpha) + self.alpha
 
-        # NaNs arise so some regularization of log is required
-        # last term is from normalization
-        logit = torch.log(batch + 1e-8) - torch.log(1 - batch + 1e-8) + np.log(1 - self.alpha) - np.log(3)
-        log_det = F.softplus(logit) + F.softplus(-logit)
+        logit = torch.log(batch) - torch.log(1 - batch)
+        log_det = (
+            torch.zeros_like(batch) + F.softplus(logit) + F.softplus(-logit) + np.log(1 - 2 * self.alpha) - np.log(3)
+        )
 
         return logit, log_det.sum(dim=(1, 2, 3))
 

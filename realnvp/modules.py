@@ -27,11 +27,12 @@ class ActNorm(nn.Module):
             return (batch - self.b) * torch.exp(-self.log_s), self.log_s
 
         if not self._initialized:
-            self.b.data = -torch.mean(batch, dim=(0, 2, 3), keepdim=True)
             s = torch.std(batch.permute(1, 0, 2, 3).reshape(self.n_channels, -1), dim=1).reshape(
                 1, self.n_channels, 1, 1
             )
             self.log_s.data = -torch.log(s)
+            self.b.data = -torch.mean(batch, dim=(0, 2, 3), keepdim=True) * s
+            self._initialized = True
 
         return batch * self.log_s.exp() + self.b, self.log_s
 
